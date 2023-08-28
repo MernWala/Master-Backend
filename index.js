@@ -12,7 +12,8 @@ app.get('/', (req, res) => {
         status: 'Master server is working',
         'current-gateways': {
             'concept-studio': `${host}/concept-studio`,
-            'keep-plus': `${host}/keep-plus`
+            'keep-plus': `${host}/keep-plus`,
+            'quizer': `${host}/quizer`
         }
     })
 })
@@ -22,6 +23,9 @@ app.use('/concept-studio', require('./routers/conceptStudio/index'))
 
 // Main gateway 2 -> Keep Plus
 app.use('/keep-plus', require('./routers/keepPlus/index'))
+
+// Main gateway 3 -> Quizer
+app.use('/quizer', require('./routers/quizer/index'))
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
