@@ -23,7 +23,22 @@ router.get('/join/:quizeCode', fetchuser, async (req, res) => {
             }
 
             const qCode = req.params.quizeCode
-            const qSet = await Question.findOne({ quizeCode: qCode }).select('_id').select('user').select("quizeCode").select('isPublish').select('qname').select('questions.question').select('questions.picture').select('questions.option').select('questions.marks').select('questions.multiAns').select('questions._id').select('qName');
+            const qSet = await Question.findOne({
+                quizeCode: qCode
+            }).select('_id')
+                .select('user')
+                .select("quizeCode")
+                .select('isPublish')
+                .select('qname')
+                .select('questions.question')
+                .select('questions.picture')
+                .select('questions.option')
+                .select('questions.marks')
+                .select('questions.multiAns')
+                .select('questions._id')
+                .select('questions.answer')
+                .select('qName');
+
             if (!qSet)
                 return res.status(404).json({ error: `There is no quiz with id: ${qCode}` });
             else
@@ -48,12 +63,15 @@ const checkPresence = (arr, questionId) => {
     return flag;
 }
 
-const udateAnswerData = (arr, ans, questionId) => {
+const udateAnswerData = async (arr, ans, questionId, key, qCode) => {
     let tempArr = [];
     let obj = {
         "questionId": "",
         "answer": [],
         "_id": "",
+        key: key,
+        status: compareArray(ans, key),
+        marks: await getMark(qCode, questionId)
     };
 
     arr.forEach(element => {
@@ -95,6 +113,32 @@ const removeAnswerData = (arr, questionId) => {
     return newArr;
 }
 
+const compareArray = (user, final) => {
+    if (user.length !== final.length) return false;
+    else {
+        final.sort()
+        user.sort()
+        for (let i = 0; i < user.length; i++) {
+            if (user[i] !== final[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+const getMark = async (qCode, questionId) => {
+    let data = []
+
+    await Question.findOne({ quizeCode: qCode }).then(async (result) => {
+        data = result.questions.filter((ele) => {
+            return ele._id.toString() === questionId
+        })
+    })
+
+    return data[0].marks
+}
+
 // Route 2 -> This route will add answer and update answer
 router.post('/join/response/save', fetchuser, [
     // basic details
@@ -103,7 +147,8 @@ router.post('/join/response/save', fetchuser, [
 
     // question detail
     body('questionId', "Question id not found").exists(),
-    body('answer', "Answer not found").exists().isArray()
+    body('answer', "Answer not found").exists().isArray(),
+    body('key', "Actual answer not found").exists().isArray()
 
 ], async (req, res) => {
 
@@ -113,11 +158,14 @@ router.post('/join/response/save', fetchuser, [
     }
 
     try {
-        let { questionId, answer, qSetid, qCode } = req.body;
+        let { questionId, answer, qSetid, qCode, key } = req.body;
 
         let answerTemp = {
             questionId: questionId,
-            answer: answer
+            answer: answer,
+            "key": key,
+            status: compareArray(answer, key),
+            marks: await getMark(qCode, questionId)
         }
 
         const details = await TestRecord.findOne({ qSetid: qSetid, qCode: qCode, stuId: req.user.id });
@@ -129,15 +177,14 @@ router.post('/join/response/save', fetchuser, [
                 "stuId": req.user.id,
                 "record": answerTemp,
                 "isSubmited": false
-            });
-
+            })
             return res.status(201).json({ status: 'Answer added success' });
         } else {
             const flag = checkPresence(details.record, questionId);
 
             if (flag) {
                 // user will update the question
-                let newRecord = udateAnswerData(details.record, answer, questionId);
+                let newRecord = await udateAnswerData(details.record, answer, questionId, key, qCode);
                 await TestRecord.findOneAndUpdate({ qSetid: qSetid, qCode: qCode, stuId: req.user.id }, { $set: { record: newRecord } }).then(() => {
                     return res.status(200).json({ status: 'Answer update success' })
                 });
@@ -214,7 +261,19 @@ router.post(`/join/response/submit`, fetchuser, [
     }
 
     try {
-        await TestRecord.findOneAndUpdate({ qSetid: req.body.qSetid, qCode: req.body.qCode, stuId: req.user.id }, { $set: { isSubmited: true } });
+        let scoredMarks = 0
+        await TestRecord.findOne(
+            { qSetid: req.body.qSetid, qCode: req.body.qCode, stuId: req.user.id }
+        ).then((data) => {
+            data.record.forEach((ele) => {
+                if (ele.status === true) {
+                    scoredMarks += ele.marks
+                }
+            })
+        }).then(async () => {
+            await TestRecord.findOneAndUpdate({ qSetid: req.body.qSetid, qCode: req.body.qCode, stuId: req.user.id }, { $set: { isSubmited: true, scoredMarks } });
+        })
+
         return res.status(200).json({ status: `Thank you for using quizzer, Your response is recorded` });
     } catch (error) {
         return res.status(500)

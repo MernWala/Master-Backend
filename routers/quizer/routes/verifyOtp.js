@@ -32,7 +32,7 @@ router.post('/genrate/otp', [
                     from: process.env.QUIZER_NODE_MAILING_ID,
                     to: req.body.email,
                     subject: "OTP Verification",
-                    html: `<p>Hello ${req.body.email} your email verfification OTP is <b>${otp}</b></p> <br/> <p>OTP will expire after 15 minutes</p> <br/><br/> Thanks <br> <a href="mailto:${process.env.QUIZER_NODE_MAILING_ID}">Quizer</a>`
+                    html: `<p>Hello ${req.body.email} your verfification OTP is <b>${otp}</b></p> <br/> Thanks for using Quizer <br> <a href="mailto:${process.env.QUIZER_NODE_MAILING_ID}">Contact Us</a>`
                 }).then(() => {
                     return res.status(201).json({
                         msg: `OTP sent succesfully and will valid only upto 5 min`
@@ -58,7 +58,7 @@ router.post('/genrate/otp', [
                     from: process.env.QUIZER_NODE_MAILING_ID,
                     to: req.body.email,
                     subject: "OTP Verification",
-                    html: `<p>Hello ${req.body.email} your email verfification OTP is <b>${otp}</b></p> <br/> <p>OTP will expire after 15 minutes</p> <br/><br/> Thanks <br> <a href="mailto:${process.env.QUIZER_NODE_MAILING_ID}">Quizer</a>`
+                    html: `<p>Hello ${req.body.email} your verfification OTP is <b>${otp}</b></p> <br/> Thanks for using Quizer <br> <a href="mailto:${process.env.QUIZER_NODE_MAILING_ID}">Contact Us</a>`
                 }).then(() => {
                     return res.status(201).json({
                         msg: `OTP sent succesfully and will valid only upto 5 min`

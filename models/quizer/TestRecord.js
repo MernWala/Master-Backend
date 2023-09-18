@@ -29,12 +29,28 @@ const TestRecordSchema = new Schema({
                 type: Array,
                 require: true
             },
+            key :{
+                type: Array,
+                require: true
+            },
+            status: {
+                type: Boolean,
+                default: false
+            },
+            marks: {
+                type: Number,
+                require: true
+            },
             date: {
                 type: Date,
                 default: Date.now
             }
         }
     ],
+    scoredMarks: {
+        type: Number,
+        default: 0
+    },
     isSubmited: {
         type: Boolean,
         require: true
